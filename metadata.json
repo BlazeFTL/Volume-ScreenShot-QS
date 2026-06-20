@@ -1,6 +1,6 @@
 {
-  "name": "Quick Tiles",
-  "description": "Quick Settings tiles for screenshot and volume panel.",
+  "name": "Volume-ScreenShot-QS",
+  "description": "Quick Settings tiles for Screenshot capture and Volume slider panel controls.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

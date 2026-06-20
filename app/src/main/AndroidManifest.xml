@@ -24,7 +24,7 @@
         </activity>
         <service
             android:name=".ScreenshotTileService"
-            android:icon="@mipmap/ic_launcher"
+            android:icon="@drawable/ic_tile_screenshot"
             android:label="Screenshot"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
             android:exported="true">
@@ -34,13 +34,25 @@
         </service>
         <service
             android:name=".VolumePanelTileService"
-            android:icon="@mipmap/ic_launcher"
+            android:icon="@drawable/ic_tile_volume"
             android:label="Volume"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
+        </service>
+        <service
+            android:name=".ScreenshotAccessibilityService"
+            android:label="Quick Tiles Screenshot Helper"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
         </service>
     </application>
 

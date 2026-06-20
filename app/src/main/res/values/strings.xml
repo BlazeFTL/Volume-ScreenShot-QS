@@ -1,3 +1,4 @@
 <resources>
-    <string name="app_name">Quick Tiles</string>
+    <string name="app_name">Volume-ScreenShot-QS</string>
+    <string name="accessibility_description">Used to trigger a secure, system-standard screenshot command via the virtual Quick Settings panel button.</string>
 </resources>

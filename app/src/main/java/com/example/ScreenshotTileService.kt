@@ -3,10 +3,24 @@ package com.example
 import android.content.Intent
 import android.os.Handler
 import android.os.Looper
+import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import android.widget.Toast
 
 class ScreenshotTileService : TileService() {
+    override fun onStartListening() {
+        super.onStartListening()
+        try {
+            val tile = qsTile
+            if (tile != null) {
+                tile.state = Tile.STATE_ACTIVE
+                tile.updateTile()
+            }
+        } catch (e: Exception) {
+            // Safe fallback
+        }
+    }
+
     override fun onClick() {
         super.onClick()
         val prefs = PrefsManager(this)

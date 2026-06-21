@@ -3,9 +3,23 @@ package com.example
 import android.content.Context
 import android.content.Intent
 import android.media.AudioManager
+import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 
 class VolumePanelTileService : TileService() {
+    override fun onStartListening() {
+        super.onStartListening()
+        try {
+            val tile = qsTile
+            if (tile != null) {
+                tile.state = Tile.STATE_ACTIVE
+                tile.updateTile()
+            }
+        } catch (e: Exception) {
+            // Safe fallback
+        }
+    }
+
     override fun onClick() {
         super.onClick()
         val prefs = PrefsManager(this)

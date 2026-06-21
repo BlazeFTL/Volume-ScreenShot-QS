@@ -22,6 +22,11 @@ class ScreenshotAccessibilityService : AccessibilityService() {
                 false
             }
         }
+
+        fun collapseNotificationShade(): Boolean {
+            val service = instance ?: return false
+            return service.performGlobalAction(GLOBAL_ACTION_DISMISS_NOTIFICATION_SHADE)
+        }
     }
 
     override fun onServiceConnected() {

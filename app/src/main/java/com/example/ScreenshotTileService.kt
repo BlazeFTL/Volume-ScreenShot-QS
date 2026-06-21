@@ -12,8 +12,8 @@ class ScreenshotTileService : TileService() {
         val prefs = PrefsManager(this)
 
         if (prefs.useRoot) {
-            // Collapse notification panel so we don't capture the expanded QS panel
-            collapseAndExecute {
+            // Collapse notification panel before screenshot
+            collapseAndExecute(prefs) {
                 // Short delay to allow the panel to animate closed before screenshot
                 Handler(Looper.getMainLooper()).postDelayed({
                     Thread {
@@ -37,7 +37,7 @@ class ScreenshotTileService : TileService() {
                                 if (ScreenshotAccessibilityService.isEnabled()) {
                                     ScreenshotAccessibilityService.takeScreenshot()
                                 } else {
-                                    showToast("Root command failed! Please open app to configure.")
+                                    showToast("Root capture failed! Please configure within the application.")
                                     openApp()
                                 }
                             }
@@ -47,21 +47,33 @@ class ScreenshotTileService : TileService() {
             }
         } else {
             if (ScreenshotAccessibilityService.isEnabled()) {
-                collapseAndExecute {
+                collapseAndExecute(prefs) {
                     Handler(Looper.getMainLooper()).postDelayed({
                         ScreenshotAccessibilityService.takeScreenshot()
                     }, 500)
                 }
             } else {
-                showToast("Please open the app to enable Accessibility or Root screenshots!")
+                showToast("Please enable Accessibility or Root screenshots in the app first!")
                 openApp()
             }
         }
     }
 
-    private inline fun collapseAndExecute(crossinline block: () -> Unit) {
-        // We trigger system collapse
+    private fun collapseAndExecute(prefs: PrefsManager, block: () -> Unit) {
+        var collapsed = false
+        // 1. Accessibility collapse first (incredibly reliable and official)
+        if (ScreenshotAccessibilityService.isEnabled()) {
+            collapsed = ScreenshotAccessibilityService.collapseNotificationShade()
+        }
+        // 2. Root collapse command next (flawless if root is enabled)
+        if (!collapsed && prefs.useRoot) {
+            Thread {
+                ShellUtils.runRootCommand("cmd statusbar collapse")
+            }.start()
+        }
+        // 3. Fallback broadcast
         try {
+            @Suppress("DEPRECATION")
             val closeIntent = Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS)
             sendBroadcast(closeIntent)
         } catch (e: Exception) {

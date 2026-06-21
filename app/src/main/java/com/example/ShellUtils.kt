@@ -49,8 +49,8 @@ object ShellUtils {
             os.flush()
             val exitValue = process.waitFor()
             exitValue == 0
-        } catch (e: Exception) {
-            Log.e("ShellUtils", "Root execution failed for: $command", e)
+        } catch (t: Throwable) {
+            Log.e("ShellUtils", "Root execution failed for: $command", t)
             false
         } finally {
             try {

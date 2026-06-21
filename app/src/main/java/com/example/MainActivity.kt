@@ -22,6 +22,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -80,6 +81,9 @@ class MainActivity : ComponentActivity() {
                         onUseRootChange = { enabled ->
                             useRootState.value = enabled
                             prefs.useRoot = enabled
+                            if (enabled) {
+                                checkRootStatus() // Check only when explicitly requested/enabled
+                            }
                         },
                         onRootMethodChange = { method ->
                             rootMethodState.value = method
@@ -95,7 +99,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        checkRootStatus()
+        // DO NOT CHECK ROOT ON LAUNCH unless user enabled it explicitly
+        if (useRootState.value) {
+            checkRootStatus()
+        }
         checkAccessibilityStatus()
     }
 
@@ -182,35 +189,36 @@ fun DashboardScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_tile_screenshot),
-                        contentDescription = "App Icon",
-                        tint = Color(0xFF00796B),
-                        modifier = Modifier.size(36.dp)
-                    )
-                    Text(
-                        text = "Quick Tiles",
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF004D40)
-                    )
-                }
+                Image(
+                    painter = painterResource(id = R.drawable.app_logo),
+                    contentDescription = "App Icon",
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(Color.White)
+                )
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Text(
+                    text = "ScreenShot and Volume Panel Quick Settings",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF004D40),
+                    textAlign = TextAlign.Center
+                )
 
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = "ScreenShot And Volume Panel Quick Settings",
-                    fontSize = 14.sp,
+                    text = "Close Panel & Take Actions Instantly",
+                    fontSize = 13.sp,
                     color = Color(0xFF00796B),
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Medium,
                     textAlign = TextAlign.Center
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 // BLAZEFTL DESIGNER BADGE IN BOLD - Exactly as Requested
                 Surface(
@@ -229,7 +237,7 @@ fun DashboardScreen(
             }
         }
 
-        // SERVICE STATUS SECTION
+        // PRIMARY FOCUS SECTION: CORE ACCESSIBILITY HELPER
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -238,30 +246,37 @@ fun DashboardScreen(
         ) {
             Column(
                 modifier = Modifier.padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                Text(
-                    text = "System Integrations",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1C1B1F)
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = null,
+                        tint = Color(0xFF00796B),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text = "1. Core Accessibility Helper (Recommended)",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1C1B1F)
+                    )
+                }
 
-                // 1. Root Status Indicator
-                StatusRow(
-                    label = "Root Access Status",
-                    statusText = if (rootAvailable) "GRANTED / DETECTED" else "NOT DETECTED",
-                    statusColor = if (rootAvailable) Color(0xFF2E7D32) else Color(0xFFD32F2F),
-                    icon = Icons.Default.CheckCircle,
-                    onActionClick = onCheckRoot,
-                    actionText = "Refresh"
+                Text(
+                    text = "No root needed. Uses secure native system APIs to instantly collapse expanded status bars and capture pristine screenshots.",
+                    fontSize = 12.sp,
+                    color = Color(0xFF555555),
+                    lineHeight = 17.sp
                 )
 
                 Divider(color = Color(0xFFF1F1F4), thickness = 1.dp)
 
-                // 2. Accessibility Status Indicator
                 StatusRow(
-                    label = "Accessibility Helper",
+                    label = "Accessibility Service Status",
                     statusText = if (accessibilityEnabled) "ENABLED & ACTIVE" else "DISABLED (TAP TO FIX)",
                     statusColor = if (accessibilityEnabled) Color(0xFF2E7D32) else Color(0xFFE65100),
                     icon = if (accessibilityEnabled) Icons.Default.CheckCircle else Icons.Default.Warning,
@@ -271,7 +286,7 @@ fun DashboardScreen(
             }
         }
 
-        // SETTINGS CONTROL SECTION (Root Mode Toggle)
+        // SECONDARY SECTION: OPTIONAL ROOT CONTROLS
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -280,34 +295,31 @@ fun DashboardScreen(
         ) {
             Column(
                 modifier = Modifier.padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                Text(
-                    text = "Quick Settings Configuration",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1C1B1F)
-                )
-
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Build,
+                            contentDescription = null,
+                            tint = Color(0xFF757575),
+                            modifier = Modifier.size(18.dp)
+                        )
                         Text(
-                            text = "Prefer Root Capture",
+                            text = "2. Root Capture Mode (Optional)",
                             fontSize = 15.sp,
-                            fontWeight = FontWeight.SemiBold,
+                            fontWeight = FontWeight.Bold,
                             color = Color(0xFF1C1B1F)
                         )
-                        Text(
-                            text = "If enabled, uses root execution. Does not require the helper service to be active in background.",
-                            fontSize = 12.sp,
-                            color = Color(0xFF757575),
-                            lineHeight = 16.sp
-                        )
                     }
+
                     Switch(
                         checked = useRoot,
                         onCheckedChange = { onUseRootChange(it) },
@@ -318,78 +330,102 @@ fun DashboardScreen(
                     )
                 }
 
+                Text(
+                    text = "For advanced power users on rooted devices who want to use custom console screenshot commands.",
+                    fontSize = 12.sp,
+                    color = Color(0xFF757575),
+                    lineHeight = 16.sp
+                )
+
                 AnimatedVisibility(
                     visible = useRoot,
                     enter = fadeIn(animationSpec = tween(200)),
                     exit = fadeOut(animationSpec = tween(200))
                 ) {
                     Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color(0xFFF5F5F5), RoundedCornerShape(12.dp))
-                            .padding(14.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Text(
-                            text = "Root Screenshot Capture Method:",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF424242)
+                        Divider(color = Color(0xFFF1F1F4), thickness = 1.dp)
+
+                        // Root Status Indicator
+                        StatusRow(
+                            label = "Root Access Verification",
+                            statusText = if (rootAvailable) "GRANTED / DETECTED" else "NOT DETECTED",
+                            statusColor = if (rootAvailable) Color(0xFF2E7D32) else Color(0xFFD32F2F),
+                            icon = Icons.Default.CheckCircle,
+                            onActionClick = onCheckRoot,
+                            actionText = "Verify"
                         )
 
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { onRootMethodChange("keyevent") }
-                                .padding(vertical = 4.dp)
+                                .background(Color(0xFFF5F5F5), RoundedCornerShape(12.dp))
+                                .padding(14.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            RadioButton(
-                                selected = rootMethod == "keyevent",
-                                onClick = null,
-                                colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF00796B))
+                            Text(
+                                text = "Root Capture Method:",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF424242)
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Column {
-                                Text(
-                                    text = "Simulated Power + Vol Down (KeyEvent 120)",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = Color(0xFF1C1B1F)
-                                )
-                                Text(
-                                    text = "Recommended. Fully triggers native system screenshot UI and effects.",
-                                    fontSize = 11.sp,
-                                    color = Color(0xFF757575)
-                                )
-                            }
-                        }
 
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onRootMethodChange("screencap") }
-                                .padding(vertical = 4.dp)
-                        ) {
-                            RadioButton(
-                                selected = rootMethod == "screencap",
-                                onClick = null,
-                                colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF00796B))
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Column {
-                                Text(
-                                    text = "Direct Screencap Binary (CLI)",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = Color(0xFF1C1B1F)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { onRootMethodChange("keyevent") }
+                                    .padding(vertical = 4.dp)
+                            ) {
+                                RadioButton(
+                                    selected = rootMethod == "keyevent",
+                                    onClick = null,
+                                    colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF00796B))
                                 )
-                                Text(
-                                    text = "Captures the frame buffer directly and writes it to custom gallery storage.",
-                                    fontSize = 11.sp,
-                                    color = Color(0xFF757575)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Column {
+                                    Text(
+                                        text = "Simulated Power + Vol Down (KeyEvent 120)",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color(0xFF1C1B1F)
+                                    )
+                                    Text(
+                                        text = "Triggers official native screen effects/preview popup.",
+                                        fontSize = 11.sp,
+                                        color = Color(0xFF757575)
+                                    )
+                                }
+                            }
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { onRootMethodChange("screencap") }
+                                    .padding(vertical = 4.dp)
+                            ) {
+                                RadioButton(
+                                    selected = rootMethod == "screencap",
+                                    onClick = null,
+                                    colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF00796B))
                                 )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Column {
+                                    Text(
+                                        text = "Direct Screencap Utility (Screencap -p)",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color(0xFF1C1B1F)
+                                    )
+                                    Text(
+                                        text = "Writes capture stream directly to safe internal gallery.",
+                                        fontSize = 11.sp,
+                                        color = Color(0xFF757575)
+                                    )
+                                }
                             }
                         }
                     }
@@ -409,7 +445,7 @@ fun DashboardScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    text = "Interactive Local Diagnostic Tests",
+                    text = "Interactive Diagnostic Action Tests",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF1C1B1F)
@@ -450,13 +486,14 @@ fun DashboardScreen(
                                 if (ScreenshotAccessibilityService.isEnabled()) {
                                     ScreenshotAccessibilityService.takeScreenshot()
                                 } else {
-                                    Toast.makeText(context, "Please enable the Help service first!", Toast.LENGTH_LONG).show()
+                                    Toast.makeText(context, "Please enable the Helper service first!", Toast.LENGTH_LONG).show()
                                 }
                             }
                         },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00796B)),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(vertical = 12.dp)
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_tile_screenshot),
@@ -474,7 +511,8 @@ fun DashboardScreen(
                         },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF004D40)),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(vertical = 12.dp)
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_tile_volume),
@@ -512,15 +550,15 @@ fun DashboardScreen(
                 )
                 InstructionStep(
                     stepNum = "2",
-                    text = "Tap the Edit button (usually a pencil icon or three dots dynamic menu)."
+                    text = "Tap the Edit button (usually a pencil icon or three dots menu)."
                 )
                 InstructionStep(
                     stepNum = "3",
-                    text = "Scroll down to discover 'Screenshot' and 'Volume' tiles available."
+                    text = "Scroll down to discover 'Screenshot' and 'Volume' tiles."
                 )
                 InstructionStep(
                     stepNum = "4",
-                    text = "Drag-and-drop both tiles up into your prominent active layouts."
+                    text = "Drag-and-drop both tiles up into your active tray layouts."
                 )
             }
         }

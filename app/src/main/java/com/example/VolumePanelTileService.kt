@@ -12,7 +12,7 @@ class VolumePanelTileService : TileService() {
         try {
             val tile = qsTile
             if (tile != null) {
-                tile.state = Tile.STATE_ACTIVE
+                tile.state = Tile.STATE_INACTIVE
                 tile.updateTile()
             }
         } catch (e: Exception) {

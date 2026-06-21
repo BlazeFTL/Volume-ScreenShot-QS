@@ -10,6 +10,10 @@ import android.os.Looper
 import android.provider.Settings
 import android.text.TextUtils
 import android.widget.Toast
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -199,10 +203,11 @@ fun DashboardScreen(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = "Screen & Volume Panel Quick Controls",
+                    text = "ScreenShot And Volume Panel Quick Settings",
                     fontSize = 14.sp,
                     color = Color(0xFF00796B),
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -337,10 +342,11 @@ fun DashboardScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable { onRootMethodChange("keyevent") }
+                                .padding(vertical = 4.dp)
                         ) {
                             RadioButton(
                                 selected = rootMethod == "keyevent",
-                                onClick = { onRootMethodChange("keyevent") },
+                                onClick = null,
                                 colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF00796B))
                             )
                             Spacer(modifier = Modifier.width(6.dp))
@@ -364,10 +370,11 @@ fun DashboardScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable { onRootMethodChange("screencap") }
+                                .padding(vertical = 4.dp)
                         ) {
                             RadioButton(
                                 selected = rootMethod == "screencap",
-                                onClick = { onRootMethodChange("screencap") },
+                                onClick = null,
                                 colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF00796B))
                             )
                             Spacer(modifier = Modifier.width(6.dp))
@@ -412,21 +419,32 @@ fun DashboardScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    val coroutineScope = rememberCoroutineScope()
                     Button(
                         onClick = {
                             if (useRoot) {
-                                val success = if (rootMethod == "keyevent") {
-                                    ShellUtils.runRootCommand("input keyevent 120")
-                                } else {
-                                    val dirPath = "/sdcard/Pictures/Screenshots"
-                                    ShellUtils.runRootCommand("mkdir -p $dirPath")
-                                    val path = "$dirPath/Screenshot_${System.currentTimeMillis()}.png"
-                                    ShellUtils.runRootCommand("screencap -p $path")
-                                }
-                                if (success) {
-                                    Toast.makeText(context, "Root snapshot triggered!", Toast.LENGTH_SHORT).show()
-                                } else {
-                                    Toast.makeText(context, "Root shell capture failed!", Toast.LENGTH_LONG).show()
+                                coroutineScope.launch(Dispatchers.IO) {
+                                    try {
+                                        val success = if (rootMethod == "keyevent") {
+                                            ShellUtils.runRootCommand("input keyevent 120")
+                                        } else {
+                                            val dirPath = "/sdcard/Pictures/Screenshots"
+                                            ShellUtils.runRootCommand("mkdir -p $dirPath")
+                                            val path = "$dirPath/Screenshot_${System.currentTimeMillis()}.png"
+                                            ShellUtils.runRootCommand("screencap -p $path")
+                                        }
+                                        withContext(Dispatchers.Main) {
+                                            if (success) {
+                                                Toast.makeText(context, "Root snapshot triggered!", Toast.LENGTH_SHORT).show()
+                                            } else {
+                                                Toast.makeText(context, "Root snapshot failed! Ensure root is granted.", Toast.LENGTH_LONG).show()
+                                            }
+                                        }
+                                    } catch (t: Throwable) {
+                                        withContext(Dispatchers.Main) {
+                                            Toast.makeText(context, "Error: ${t.localizedMessage}", Toast.LENGTH_LONG).show()
+                                        }
+                                    }
                                 }
                             } else {
                                 if (ScreenshotAccessibilityService.isEnabled()) {

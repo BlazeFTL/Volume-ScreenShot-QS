@@ -9,28 +9,32 @@ import java.io.InputStreamReader
 object ShellUtils {
 
     fun isRootAvailable(): Boolean {
-        val paths = arrayOf(
-            "/system/app/Superuser.apk",
-            "/sbin/su",
-            "/system/bin/su",
-            "/system/xbin/su",
-            "/data/local/xbin/su",
-            "/data/local/bin/su",
-            "/system/sd/xbin/su",
-            "/system/bin/failsafe/su",
-            "/data/local/su"
-        )
-        for (path in paths) {
-            if (File(path).exists()) return true
-        }
+        var process: Process? = null
+        var os: DataOutputStream? = null
+        var reader: BufferedReader? = null
         return try {
-            val process = Runtime.getRuntime().exec("which su")
-            val reader = BufferedReader(InputStreamReader(process.inputStream))
-            val line = reader.readLine()
-            process.destroy()
-            line != null
+            process = Runtime.getRuntime().exec("su")
+            os = DataOutputStream(process.outputStream)
+            os.writeBytes("id\n")
+            os.writeBytes("exit\n")
+            os.flush()
+            
+            reader = BufferedReader(InputStreamReader(process.inputStream))
+            val output = reader.readLine() ?: ""
+            val exitValue = process.waitFor()
+            
+            // True root is only when exit code is 0 and output indicates uid=0 (root)
+            exitValue == 0 && (output.contains("uid=0") || output.contains("root"))
         } catch (t: Throwable) {
             false
+        } finally {
+            try {
+                reader?.close()
+                os?.close()
+                process?.destroy()
+            } catch (e: Exception) {
+                // ignore
+            }
         }
     }
 

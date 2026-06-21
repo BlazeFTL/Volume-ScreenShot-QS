@@ -16,24 +16,33 @@ class ScreenshotTileService : TileService() {
             collapseAndExecute {
                 // Short delay to allow the panel to animate closed before screenshot
                 Handler(Looper.getMainLooper()).postDelayed({
-                    val success = if (prefs.rootMethod == "keyevent") {
-                        ShellUtils.runRootCommand("input keyevent 120")
-                    } else {
-                        val dirPath = "/sdcard/Pictures/Screenshots"
-                        ShellUtils.runRootCommand("mkdir -p $dirPath")
-                        val path = "$dirPath/Screenshot_${System.currentTimeMillis()}.png"
-                        ShellUtils.runRootCommand("screencap -p $path")
-                    }
-
-                    if (!success) {
-                        // Fallback to accessibility service if root fails
-                        if (ScreenshotAccessibilityService.isEnabled()) {
-                            ScreenshotAccessibilityService.takeScreenshot()
-                        } else {
-                            showToast("Root command failed! Please open app to configure.")
-                            openApp()
+                    Thread {
+                        var success = false
+                        try {
+                            success = if (prefs.rootMethod == "keyevent") {
+                                ShellUtils.runRootCommand("input keyevent 120")
+                            } else {
+                                val dirPath = "/sdcard/Pictures/Screenshots"
+                                ShellUtils.runRootCommand("mkdir -p $dirPath")
+                                val path = "$dirPath/Screenshot_${System.currentTimeMillis()}.png"
+                                ShellUtils.runRootCommand("screencap -p $path")
+                            }
+                        } catch (t: Throwable) {
+                            success = false
                         }
-                    }
+
+                        if (!success) {
+                            Handler(Looper.getMainLooper()).post {
+                                // Fallback to accessibility service if root fails
+                                if (ScreenshotAccessibilityService.isEnabled()) {
+                                    ScreenshotAccessibilityService.takeScreenshot()
+                                } else {
+                                    showToast("Root command failed! Please open app to configure.")
+                                    openApp()
+                                }
+                            }
+                        }
+                    }.start()
                 }, 500)
             }
         } else {

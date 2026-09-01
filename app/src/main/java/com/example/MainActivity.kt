@@ -54,7 +54,7 @@ class MainActivity : ComponentActivity() {
     private val rootAvailableState = mutableStateOf(false)
     private val accessibilityEnabledState = mutableStateOf(false)
     private val useRootState = mutableStateOf(false)
-    private val rootMethodState = mutableStateOf("keyevent")
+    private val rootMethodState = mutableStateOf("screencap")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -454,6 +454,34 @@ fun DashboardScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier
                                     .fillMaxWidth()
+                                    .clickable { onRootMethodChange("screencap") }
+                                    .padding(vertical = 4.dp)
+                            ) {
+                                RadioButton(
+                                    selected = rootMethod == "screencap",
+                                    onClick = null,
+                                    colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF00796B))
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Column {
+                                    Text(
+                                        text = "Direct Screencap Utility (Recommended)",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color(0xFF1C1B1F)
+                                    )
+                                    Text(
+                                        text = "Works in ALL apps (including Firefox Nightly & secure screens). Saves and indexes directly to Gallery.",
+                                        fontSize = 11.sp,
+                                        color = Color(0xFF757575)
+                                    )
+                                }
+                            }
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
                                     .clickable { onRootMethodChange("keyevent") }
                                     .padding(vertical = 4.dp)
                             ) {
@@ -471,35 +499,7 @@ fun DashboardScreen(
                                         color = Color(0xFF1C1B1F)
                                     )
                                     Text(
-                                        text = "Triggers official native screen effects/preview popup.",
-                                        fontSize = 11.sp,
-                                        color = Color(0xFF757575)
-                                    )
-                                }
-                            }
-
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { onRootMethodChange("screencap") }
-                                    .padding(vertical = 4.dp)
-                            ) {
-                                RadioButton(
-                                    selected = rootMethod == "screencap",
-                                    onClick = null,
-                                    colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF00796B))
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Column {
-                                    Text(
-                                        text = "Direct Screencap Utility with Gallery Indexing",
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        color = Color(0xFF1C1B1F)
-                                    )
-                                    Text(
-                                        text = "Writes capture stream directly and adds to Android Gallery / Photos.",
+                                        text = "Triggers system hardware key chord (may be blocked by secure apps).",
                                         fontSize = 11.sp,
                                         color = Color(0xFF757575)
                                     )

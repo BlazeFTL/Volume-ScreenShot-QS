@@ -26,60 +26,39 @@ class ScreenshotTileService : TileService() {
         val prefs = PrefsManager(this)
 
         if (prefs.useRoot) {
-            // Collapse notification panel before taking screenshot of underlying screen/app
-            collapseAndExecute(prefs) {
-                Handler(Looper.getMainLooper()).postDelayed({
-                    Thread {
-                        val success = ShellUtils.takeRootScreencap(applicationContext, prefs.rootMethod)
-                        if (!success) {
-                            Handler(Looper.getMainLooper()).post {
-                                if (ScreenshotAccessibilityService.isEnabled()) {
-                                    ScreenshotAccessibilityService.takeScreenshot()
-                                } else {
-                                    showToast("Root capture failed! Please open app to configure.")
-                                    openApp()
-                                }
-                            }
+            // Single root execution: Collapse statusbar and capture in one session (only 1 SU toast!)
+            Thread {
+                val success = ShellUtils.takeRootScreencap(
+                    context = applicationContext,
+                    method = prefs.rootMethod,
+                    collapseFirst = true
+                )
+                Handler(Looper.getMainLooper()).post {
+                    if (!success) {
+                        if (ScreenshotAccessibilityService.isEnabled()) {
+                            ScreenshotAccessibilityService.collapseNotificationShade()
+                            Handler(Looper.getMainLooper()).postDelayed({
+                                ScreenshotAccessibilityService.takeScreenshot()
+                            }, 450)
+                        } else {
+                            showToast("Root capture failed! Please open app to configure.")
+                            openApp()
                         }
-                    }.start()
-                }, 550)
-            }
+                    }
+                }
+            }.start()
         } else {
             if (ScreenshotAccessibilityService.isEnabled()) {
-                // Collapse notification panel before taking screenshot of underlying screen/app
-                collapseAndExecute(prefs) {
-                    Handler(Looper.getMainLooper()).postDelayed({
-                        ScreenshotAccessibilityService.takeScreenshot()
-                    }, 550)
-                }
+                // Collapse notification panel first, then take screenshot of underlying screen/app
+                ScreenshotAccessibilityService.collapseNotificationShade()
+                Handler(Looper.getMainLooper()).postDelayed({
+                    ScreenshotAccessibilityService.takeScreenshot()
+                }, 450)
             } else {
                 showToast("Please enable Accessibility Helper service in the app first!")
                 openApp()
             }
         }
-    }
-
-    private fun collapseAndExecute(prefs: PrefsManager, block: () -> Unit) {
-        var collapsed = false
-        // 1. Accessibility collapse first (cleanest and official API)
-        if (ScreenshotAccessibilityService.isEnabled()) {
-            collapsed = ScreenshotAccessibilityService.collapseNotificationShade()
-        }
-        // 2. Root collapse command next (if root enabled)
-        if (!collapsed && prefs.useRoot) {
-            Thread {
-                ShellUtils.runRootCommand("cmd statusbar collapse")
-            }.start()
-        }
-        // 3. Fallback broadcast
-        try {
-            @Suppress("DEPRECATION")
-            val closeIntent = Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS)
-            sendBroadcast(closeIntent)
-        } catch (e: Exception) {
-            // Ignore
-        }
-        block()
     }
 
     private fun openApp() {

@@ -8,7 +8,7 @@ class PrefsManager(context: Context) {
 
     companion object {
         private const val KEY_USE_ROOT = "use_root"
-        private const val KEY_ROOT_METHOD = "root_method" // "keyevent" or "screencap"
+        private const val KEY_ROOT_METHOD = "root_method" // "screencap" (direct) or "keyevent" (simulated keys)
     }
 
     var useRoot: Boolean
@@ -16,6 +16,6 @@ class PrefsManager(context: Context) {
         set(value) = prefs.edit().putBoolean(KEY_USE_ROOT, value).apply()
 
     var rootMethod: String
-        get() = prefs.getString(KEY_ROOT_METHOD, "keyevent") ?: "keyevent"
+        get() = prefs.getString(KEY_ROOT_METHOD, "screencap") ?: "screencap"
         set(value) = prefs.edit().putString(KEY_ROOT_METHOD, value).apply()
 }

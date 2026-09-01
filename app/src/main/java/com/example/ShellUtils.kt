@@ -98,7 +98,7 @@ object ShellUtils {
         val scriptBuilder = StringBuilder()
         if (collapseFirst) {
             scriptBuilder.append("cmd statusbar collapse\n")
-            scriptBuilder.append("sleep 0.45\n")
+            scriptBuilder.append("sleep 0.6\n")
         }
 
         if (method == "keyevent") {

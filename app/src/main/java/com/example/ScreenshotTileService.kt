@@ -1,6 +1,7 @@
 package com.example
 
 import android.content.Intent
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.service.quicksettings.Tile
@@ -25,18 +26,16 @@ class ScreenshotTileService : TileService() {
         super.onClick()
         val prefs = PrefsManager(this)
 
+        // Ensure the tile panel collapse is initiated immediately by TileService as well
+        dismissTileWindow()
+
         if (prefs.useRoot) {
-            // If the user selected the native UI simulation and Accessibility service is already enabled,
-            // using the Accessibility Global Action provides the authentic native system screenshot UI/animation!
             if (prefs.rootMethod == "keyevent" && ScreenshotAccessibilityService.isEnabled()) {
-                ScreenshotAccessibilityService.collapseNotificationShade()
-                Handler(Looper.getMainLooper()).postDelayed({
-                    ScreenshotAccessibilityService.takeScreenshot()
-                }, 450)
+                ScreenshotAccessibilityService.collapseAndTakeScreenshot(600L)
                 return
             }
 
-            // Otherwise execute root command
+            // Root Mode: execute collapse and screencap
             Thread {
                 val success = ShellUtils.takeRootScreencap(
                     context = applicationContext,
@@ -46,10 +45,7 @@ class ScreenshotTileService : TileService() {
                 Handler(Looper.getMainLooper()).post {
                     if (!success) {
                         if (ScreenshotAccessibilityService.isEnabled()) {
-                            ScreenshotAccessibilityService.collapseNotificationShade()
-                            Handler(Looper.getMainLooper()).postDelayed({
-                                ScreenshotAccessibilityService.takeScreenshot()
-                            }, 450)
+                            ScreenshotAccessibilityService.collapseAndTakeScreenshot(600L)
                         } else {
                             showToast("Root capture failed! Please open app to configure.")
                             openApp()
@@ -59,15 +55,25 @@ class ScreenshotTileService : TileService() {
             }.start()
         } else {
             if (ScreenshotAccessibilityService.isEnabled()) {
-                // Collapse notification panel first, then take screenshot of underlying screen/app
-                ScreenshotAccessibilityService.collapseNotificationShade()
-                Handler(Looper.getMainLooper()).postDelayed({
-                    ScreenshotAccessibilityService.takeScreenshot()
-                }, 450)
+                // Accessibility Mode (Single Click):
+                // 1. Closes the Quick Settings panel completely
+                // 2. Waits for the collapse transition
+                // 3. Captures a clean screenshot of the underlying app / screen
+                ScreenshotAccessibilityService.collapseAndTakeScreenshot(600L)
             } else {
                 showToast("Please enable Accessibility Helper service in the app first!")
                 openApp()
             }
+        }
+    }
+
+    private fun dismissTileWindow() {
+        try {
+            @Suppress("DEPRECATION")
+            val closeIntent = Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS)
+            sendBroadcast(closeIntent)
+        } catch (e: Exception) {
+            // Ignore
         }
     }
 
@@ -76,7 +82,7 @@ class ScreenshotTileService : TileService() {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         }
         try {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 val pendingIntent = android.app.PendingIntent.getActivity(
                     this, 0, intent, android.app.PendingIntent.FLAG_IMMUTABLE
                 )

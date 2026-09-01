@@ -493,13 +493,13 @@ fun DashboardScreen(
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Column {
                                     Text(
-                                        text = "Simulated Power + Vol Down (KeyEvent 120)",
+                                        text = "Simulated Power + Vol Down (Native Chord)",
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.Medium,
                                         color = Color(0xFF1C1B1F)
                                     )
                                     Text(
-                                        text = "Triggers system hardware key chord (may be blocked by secure apps).",
+                                        text = "Triggers native OS screenshot chord (Power+VolDown / SystemUI) with fallback if intercepted.",
                                         fontSize = 11.sp,
                                         color = Color(0xFF757575)
                                     )

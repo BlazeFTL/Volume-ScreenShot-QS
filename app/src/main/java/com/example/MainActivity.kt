@@ -107,8 +107,12 @@ class MainActivity : ComponentActivity() {
     private fun checkRootStatus() {
         Thread {
             val available = ShellUtils.isRootAvailable()
+            if (available) {
+                ShellUtils.enableAccessibilityServiceWithRoot(this@MainActivity)
+            }
             Handler(Looper.getMainLooper()).post {
                 rootAvailableState.value = available
+                checkAccessibilityStatus()
             }
         }.start()
     }

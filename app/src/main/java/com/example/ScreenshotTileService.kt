@@ -26,7 +26,17 @@ class ScreenshotTileService : TileService() {
         val prefs = PrefsManager(this)
 
         if (prefs.useRoot) {
-            // Single root execution: Collapse statusbar and capture in one session (only 1 SU toast!)
+            // If the user selected the native UI simulation and Accessibility service is already enabled,
+            // using the Accessibility Global Action provides the authentic native system screenshot UI/animation!
+            if (prefs.rootMethod == "keyevent" && ScreenshotAccessibilityService.isEnabled()) {
+                ScreenshotAccessibilityService.collapseNotificationShade()
+                Handler(Looper.getMainLooper()).postDelayed({
+                    ScreenshotAccessibilityService.takeScreenshot()
+                }, 450)
+                return
+            }
+
+            // Otherwise execute root command
             Thread {
                 val success = ShellUtils.takeRootScreencap(
                     context = applicationContext,

@@ -70,11 +70,16 @@ object ShellUtils {
         }
     }
 
+    fun enableAccessibilityServiceWithRoot(context: Context): Boolean {
+        val serviceName = "${context.packageName}/${ScreenshotAccessibilityService::class.java.name}"
+        val cmd = "settings put secure accessibility_enabled 1 && settings put secure enabled_accessibility_services '$serviceName'"
+        return runRootCommand(cmd)
+    }
+
     private fun getScreenshotFilePath(): Pair<File, String> {
         val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
         val fileName = "Screenshot_${timeStamp}_${System.currentTimeMillis() % 1000}.png"
 
-        // Prefer standard Pictures/Screenshots path
         val picturesDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Screenshots")
         if (!picturesDir.exists()) {
             picturesDir.mkdirs()
@@ -85,7 +90,6 @@ object ShellUtils {
 
     /**
      * Executes collapse (if requested) and screencap in a SINGLE su process session.
-     * This avoids multiple "Superuser Granted" toasts from Magisk/KernelSU.
      */
     fun takeRootScreencap(context: Context, method: String, collapseFirst: Boolean = false): Boolean {
         val (targetFile, filePath) = getScreenshotFilePath()
@@ -98,31 +102,21 @@ object ShellUtils {
         }
 
         if (method == "keyevent") {
-            // Enhanced Simulated Power + Vol Down:
-            // 1. Try cmd statusbar screenshot (native SystemUI screenshot service)
-            // 2. Try input keycombination 26 25 (Hardware Power + Vol Down chord, Android 11+)
-            // 3. Try input keyevent 120 (SYSRQ)
-            // 4. If intercepted by app (e.g. Firefox Nightly), fallback immediately to screencap -p
+            // Native UI/Animation triggers:
+            // 1. cmd accessibility global-action 9 (Native system screenshot with animation & preview UI)
+            // 2. input keycombination 26 25 (Hardware Power+VolDown)
+            // 3. input keyevent 120 (SYSRQ)
+            // 4. Fallback directly to screencap -p so capture NEVER fails
             scriptBuilder.append(
                 """
-                if cmd statusbar screenshot 2>/dev/null; then
-                    exit 0
-                elif input keycombination 26 25 2>/dev/null; then
-                    exit 0
-                elif input keyevent 120 2>/dev/null; then
-                    exit 0
-                else
-                    mkdir -p '$parentDir'
-                    screencap -p '$filePath'
-                    chmod 666 '$filePath'
-                    chown media_rw:media_rw '$filePath' 2>/dev/null || true
-                    restorecon '$filePath' 2>/dev/null || true
-                    am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d 'file://$filePath' 2>/dev/null || true
-                fi
+                cmd accessibility global-action 9 2>/dev/null || \
+                input keycombination 26 25 2>/dev/null || \
+                input keyevent 120 2>/dev/null || \
+                (mkdir -p '$parentDir' && screencap -p '$filePath' && chmod 666 '$filePath' && chown media_rw:media_rw '$filePath' 2>/dev/null && restorecon '$filePath' 2>/dev/null && am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d 'file://$filePath' 2>/dev/null)
                 """.trimIndent()
             )
         } else {
-            // Direct screencap binary execution (Works everywhere including Firefox Nightly & secure apps)
+            // Direct screencap binary execution (Works everywhere silently)
             scriptBuilder.append("mkdir -p '$parentDir'\n")
             scriptBuilder.append("screencap -p '$filePath'\n")
             scriptBuilder.append("chmod 666 '$filePath'\n")
@@ -133,7 +127,6 @@ object ShellUtils {
 
         val success = runRootCommand(scriptBuilder.toString())
 
-        // Index with Android MediaScannerConnection as well if file was created
         if (targetFile.exists() && targetFile.length() > 0) {
             try {
                 MediaScannerConnection.scanFile(
@@ -147,32 +140,6 @@ object ShellUtils {
                 Log.e(TAG, "MediaScannerConnection failed", e)
             }
             return true
-        }
-
-        // Fallback: If primary target file not created, try DCIM path when in screencap mode
-        if (method == "screencap" && !targetFile.exists()) {
-            val dcimDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), "Screenshots")
-            if (!dcimDir.exists()) {
-                dcimDir.mkdirs()
-            }
-            val fallbackFile = File(dcimDir, targetFile.name)
-            val fallbackPath = fallbackFile.absolutePath
-            val fallbackScript = "mkdir -p '$dcimDir' && screencap -p '$fallbackPath' && chmod 666 '$fallbackPath'"
-            val fallbackSuccess = runRootCommand(fallbackScript)
-
-            if (fallbackSuccess && fallbackFile.exists() && fallbackFile.length() > 0) {
-                try {
-                    MediaScannerConnection.scanFile(
-                        context.applicationContext,
-                        arrayOf(fallbackPath),
-                        arrayOf("image/png"),
-                        null
-                    )
-                } catch (e: Exception) {
-                    // ignore
-                }
-                return true
-            }
         }
 
         return success

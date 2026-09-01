@@ -11,6 +11,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.MyApplication">
+        
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -18,10 +19,22 @@
             android:theme="@style/Theme.MyApplication">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Long Press Handler for Quick Settings Screenshot Tile: Holds for 2-3s to capture QS Panel without closing -->
+        <activity
+            android:name=".ScreenshotLongPressActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@style/Theme.Transparent">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE_PREFERENCES" />
+            </intent-filter>
+        </activity>
+
         <service
             android:name=".ScreenshotTileService"
             android:icon="@drawable/ic_tile_screenshot"
@@ -32,6 +45,7 @@
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
         </service>
+
         <service
             android:name=".VolumePanelTileService"
             android:icon="@drawable/ic_tile_volume"
@@ -42,6 +56,7 @@
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
         </service>
+
         <service
             android:name=".ScreenshotAccessibilityService"
             android:label="Quick Tiles Screenshot Helper"

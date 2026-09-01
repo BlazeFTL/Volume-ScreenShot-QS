@@ -10,7 +10,6 @@ import android.os.Looper
 import android.provider.Settings
 import android.text.TextUtils
 import android.widget.Toast
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -70,7 +69,7 @@ class MainActivity : ComponentActivity() {
             MyApplicationTheme {
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
-                    containerColor = Color(0xFFF9F9FB) // Off-white clean bg
+                    containerColor = Color(0xFFF9F9FB)
                 ) { innerPadding ->
                     DashboardScreen(
                         modifier = Modifier.padding(innerPadding),
@@ -82,7 +81,7 @@ class MainActivity : ComponentActivity() {
                             useRootState.value = enabled
                             prefs.useRoot = enabled
                             if (enabled) {
-                                checkRootStatus() // Check only when explicitly requested/enabled
+                                checkRootStatus()
                             }
                         },
                         onRootMethodChange = { method ->
@@ -99,7 +98,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // DO NOT CHECK ROOT ON LAUNCH unless user enabled it explicitly
         if (useRootState.value) {
             checkRootStatus()
         }
@@ -107,7 +105,6 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun checkRootStatus() {
-        // Run in thread to not block main thread
         Thread {
             val available = ShellUtils.isRootAvailable()
             Handler(Looper.getMainLooper()).post {
@@ -143,7 +140,7 @@ class MainActivity : ComponentActivity() {
         try {
             val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
             startActivity(intent)
-            Toast.makeText(this, "Find 'Quick Tiles' under Installed Services and turn it ON", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Find 'Quick Tiles Screenshot Helper' and turn it ON", Toast.LENGTH_LONG).show()
         } catch (e: Exception) {
             Toast.makeText(this, "Could not open accessibility settings directly.", Toast.LENGTH_SHORT).show()
         }
@@ -173,7 +170,7 @@ fun DashboardScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        // TOP LOGO/BANNER HEADER (Modern Light Theme with Teal/Blue gradient accent)
+        // TOP LOGO/BANNER HEADER
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -220,7 +217,6 @@ fun DashboardScreen(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // BLAZEFTL DESIGNER BADGE IN BOLD - Exactly as Requested
                 Surface(
                     shape = CircleShape,
                     color = Color(0xFF00796B),
@@ -233,6 +229,89 @@ fun DashboardScreen(
                         color = Color.White,
                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
                     )
+                }
+            }
+        }
+
+        // TILE GESTURES & ACTIONS BEHAVIOR CARD
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            shape = RoundedCornerShape(20.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = null,
+                        tint = Color(0xFF00796B),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text = "Screenshot Tile Modes",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1C1B1F)
+                    )
+                }
+
+                Row(
+                    verticalAlignment = Alignment.Top,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null,
+                        tint = Color(0xFF00796B),
+                        modifier = Modifier.size(18.dp).padding(top = 2.dp)
+                    )
+                    Column {
+                        Text(
+                            text = "Single Click / Tap",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            color = Color(0xFF1C1B1F)
+                        )
+                        Text(
+                            text = "Instantly closes the Quick Settings panel, then takes a clean screenshot of the underlying app/screen.",
+                            fontSize = 12.sp,
+                            color = Color(0xFF555555),
+                            lineHeight = 16.sp
+                        )
+                    }
+                }
+
+                Row(
+                    verticalAlignment = Alignment.Top,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ThumbUp,
+                        contentDescription = null,
+                        tint = Color(0xFF00796B),
+                        modifier = Modifier.size(18.dp).padding(top = 2.dp)
+                    )
+                    Column {
+                        Text(
+                            text = "Hold / Long Press (2–3 sec)",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            color = Color(0xFF1C1B1F)
+                        )
+                        Text(
+                            text = "Does NOT close the Quick Settings panel. Immediately takes a screenshot of the open Quick Settings / notification shade directly.",
+                            fontSize = 12.sp,
+                            color = Color(0xFF555555),
+                            lineHeight = 16.sp
+                        )
+                    }
                 }
             }
         }
@@ -267,7 +346,7 @@ fun DashboardScreen(
                 }
 
                 Text(
-                    text = "No root needed. Uses secure native system APIs to instantly collapse expanded status bars and capture pristine screenshots.",
+                    text = "No root needed. Uses secure native system APIs to collapse expanded status bars and capture pristine screenshots.",
                     fontSize = 12.sp,
                     color = Color(0xFF555555),
                     lineHeight = 17.sp
@@ -348,7 +427,6 @@ fun DashboardScreen(
                     ) {
                         Divider(color = Color(0xFFF1F1F4), thickness = 1.dp)
 
-                        // Root Status Indicator
                         StatusRow(
                             label = "Root Access Verification",
                             statusText = if (rootAvailable) "GRANTED / DETECTED" else "NOT DETECTED",
@@ -415,13 +493,13 @@ fun DashboardScreen(
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Column {
                                     Text(
-                                        text = "Direct Screencap Utility (Screencap -p)",
+                                        text = "Direct Screencap Utility with Gallery Indexing",
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.Medium,
                                         color = Color(0xFF1C1B1F)
                                     )
                                     Text(
-                                        text = "Writes capture stream directly to safe internal gallery.",
+                                        text = "Writes capture stream directly and adds to Android Gallery / Photos.",
                                         fontSize = 11.sp,
                                         color = Color(0xFF757575)
                                     )
@@ -461,17 +539,10 @@ fun DashboardScreen(
                             if (useRoot) {
                                 coroutineScope.launch(Dispatchers.IO) {
                                     try {
-                                        val success = if (rootMethod == "keyevent") {
-                                            ShellUtils.runRootCommand("input keyevent 120")
-                                        } else {
-                                            val dirPath = "/sdcard/Pictures/Screenshots"
-                                            ShellUtils.runRootCommand("mkdir -p $dirPath")
-                                            val path = "$dirPath/Screenshot_${System.currentTimeMillis()}.png"
-                                            ShellUtils.runRootCommand("screencap -p $path")
-                                        }
+                                        val success = ShellUtils.takeRootScreencap(context, rootMethod)
                                         withContext(Dispatchers.Main) {
                                             if (success) {
-                                                Toast.makeText(context, "Root snapshot triggered!", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(context, "Root screenshot captured and saved!", Toast.LENGTH_SHORT).show()
                                             } else {
                                                 Toast.makeText(context, "Root snapshot failed! Ensure root is granted.", Toast.LENGTH_LONG).show()
                                             }
@@ -484,9 +555,14 @@ fun DashboardScreen(
                                 }
                             } else {
                                 if (ScreenshotAccessibilityService.isEnabled()) {
-                                    ScreenshotAccessibilityService.takeScreenshot()
+                                    val success = ScreenshotAccessibilityService.takeScreenshot()
+                                    if (success) {
+                                        Toast.makeText(context, "Screenshot triggered successfully!", Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        Toast.makeText(context, "Could not capture screenshot.", Toast.LENGTH_SHORT).show()
+                                    }
                                 } else {
-                                    Toast.makeText(context, "Please enable the Helper service first!", Toast.LENGTH_LONG).show()
+                                    Toast.makeText(context, "Please enable the Accessibility Helper service first!", Toast.LENGTH_LONG).show()
                                 }
                             }
                         },

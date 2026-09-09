@@ -30,13 +30,27 @@ class ScreenshotTileService : TileService() {
         dismissTileWindow()
 
         if (prefs.useRoot) {
-            if (prefs.rootMethod == "keyevent" && ScreenshotAccessibilityService.isEnabled()) {
-                ScreenshotAccessibilityService.collapseAndTakeScreenshot(600L)
-                return
-            }
-
-            // Root Mode: execute collapse and screencap
             Thread {
+                if (prefs.rootMethod == "keyevent") {
+                    // If accessibility service is not connected yet (e.g. app was force stopped),
+                    // re-enable/refresh it using root privileges automatically
+                    if (!ScreenshotAccessibilityService.isEnabled()) {
+                        ShellUtils.enableAccessibilityServiceWithRoot(applicationContext)
+                        for (i in 0..7) {
+                            if (ScreenshotAccessibilityService.isEnabled()) break
+                            try { Thread.sleep(100) } catch (_: Exception) {}
+                        }
+                    }
+
+                    if (ScreenshotAccessibilityService.isEnabled()) {
+                        Handler(Looper.getMainLooper()).post {
+                            ScreenshotAccessibilityService.collapseAndTakeScreenshot(600L)
+                        }
+                        return@Thread
+                    }
+                }
+
+                // Root Mode fallback: execute collapse and direct screencap
                 val success = ShellUtils.takeRootScreencap(
                     context = applicationContext,
                     method = prefs.rootMethod,

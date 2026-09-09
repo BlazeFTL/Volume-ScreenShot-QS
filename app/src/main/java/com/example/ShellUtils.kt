@@ -72,7 +72,19 @@ object ShellUtils {
 
     fun enableAccessibilityServiceWithRoot(context: Context): Boolean {
         val serviceName = "${context.packageName}/${ScreenshotAccessibilityService::class.java.name}"
-        val cmd = "settings put secure accessibility_enabled 1 && settings put secure enabled_accessibility_services '$serviceName'"
+        val cmd = "settings put secure accessibility_enabled 1; " +
+            "cur=\$(settings get secure enabled_accessibility_services); " +
+            "case \":\$cur:\" in " +
+            "*:$serviceName:*) " +
+            "settings put secure enabled_accessibility_services \"\${cur//$serviceName/}\"; " +
+            "settings put secure enabled_accessibility_services \"\$cur\" ;; " +
+            "*) " +
+            "if [ -z \"\$cur\" ] || [ \"\$cur\" = \"null\" ]; then " +
+            "settings put secure enabled_accessibility_services \"$serviceName\"; " +
+            "else " +
+            "settings put secure enabled_accessibility_services \"\$cur:$serviceName\"; " +
+            "fi ;; " +
+            "esac"
         return runRootCommand(cmd)
     }
 
@@ -101,29 +113,20 @@ object ShellUtils {
             scriptBuilder.append("sleep 0.6\n")
         }
 
+        // Both methods guarantee a real screenshot capture directly to storage & gallery.
+        // We do not use "input keycombination 26 25" because on Android it triggers Volume Down
+        // and brings up the volume slider instead of taking a screenshot.
         if (method == "keyevent") {
-            // Native UI/Animation triggers:
-            // 1. cmd accessibility global-action 9 (Native system screenshot with animation & preview UI)
-            // 2. input keycombination 26 25 (Hardware Power+VolDown)
-            // 3. input keyevent 120 (SYSRQ)
-            // 4. Fallback directly to screencap -p so capture NEVER fails
-            scriptBuilder.append(
-                """
-                cmd accessibility global-action 9 2>/dev/null || \
-                input keycombination 26 25 2>/dev/null || \
-                input keyevent 120 2>/dev/null || \
-                (mkdir -p '$parentDir' && screencap -p '$filePath' && chmod 666 '$filePath' && chown media_rw:media_rw '$filePath' 2>/dev/null && restorecon '$filePath' 2>/dev/null && am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d 'file://$filePath' 2>/dev/null)
-                """.trimIndent()
-            )
-        } else {
-            // Direct screencap binary execution (Works everywhere silently)
-            scriptBuilder.append("mkdir -p '$parentDir'\n")
-            scriptBuilder.append("screencap -p '$filePath'\n")
-            scriptBuilder.append("chmod 666 '$filePath'\n")
-            scriptBuilder.append("chown media_rw:media_rw '$filePath' 2>/dev/null || true\n")
-            scriptBuilder.append("restorecon '$filePath' 2>/dev/null || true\n")
-            scriptBuilder.append("am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d 'file://$filePath' 2>/dev/null || true\n")
+            scriptBuilder.append("cmd accessibility global-action 9 2>/dev/null\n")
+            scriptBuilder.append("sleep 0.2\n")
         }
+
+        scriptBuilder.append("mkdir -p '$parentDir'\n")
+        scriptBuilder.append("screencap -p '$filePath'\n")
+        scriptBuilder.append("chmod 666 '$filePath'\n")
+        scriptBuilder.append("chown media_rw:media_rw '$filePath' 2>/dev/null || true\n")
+        scriptBuilder.append("restorecon '$filePath' 2>/dev/null || true\n")
+        scriptBuilder.append("am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d 'file://$filePath' 2>/dev/null || true\n")
 
         val success = runRootCommand(scriptBuilder.toString())
 
